@@ -1,0 +1,41 @@
+<?xml version="1.0" encoding="UTF-8"?>
+
+<node name="/com/labprob/VehicleMonitor">
+
+    <interface name="com.labprob.VehicleMonitor">
+
+        <!-- Methods -->
+
+        <method name="GetCpuUsage">
+            <arg name="usage" type="d" direction="out"/>
+        </method>
+
+        <method name="GetMemoryUsage">
+            <arg name="usage" type="d" direction="out"/>
+        </method>
+
+        <method name="GetUptime">
+            <arg name="uptime" type="s" direction="out"/>
+        </method>
+
+        <method name="GetVehicleSpeed">
+            <arg name="speed" type="i" direction="out"/>
+        </method>
+
+        <!-- Signals -->
+
+        <signal name="CpuUsageChanged">
+            <arg name="usage" type="d"/>
+        </signal>
+
+        <signal name="MemoryUsageChanged">
+            <arg name="usage" type="d"/>
+        </signal>
+
+        <signal name="VehicleSpeedChanged">
+            <arg name="speed" type="i"/>
+        </signal>
+
+    </interface>
+
+</node>
