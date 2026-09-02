@@ -2,9 +2,6 @@ cmake_minimum_required(VERSION 3.16)
 
 project(vehicle_monitor_service VERSION 1.0 LANGUAGES CXX)
 
-set(CMAKE_CXX_STANDARD 20)
-set(CMAKE_CXX_STANDARD_REQUIRED ON)
-
 set(CMAKE_EXPORT_COMPILE_COMMANDS ON)
 
 # =========================
@@ -19,21 +16,8 @@ option(BUILD_SERVER "Build DBus server" ON)
 # =========================
 
 find_package(PkgConfig REQUIRED)
-
-pkg_check_modules(SDBUS REQUIRED sdbus-c++)
-
-# =========================
-# Include directories
-# =========================
-
-include_directories(
-    ${SDBUS_INCLUDE_DIRS}
-    ${CMAKE_SOURCE_DIR}/src
-)
-
-link_directories(
-    ${SDBUS_LIBRARY_DIRS}
-)
+pkg_check_modules(SDBUS REQUIRED IMPORTED_TARGET sdbus-c++)
+find_program(SDBUS_XML2CPP_EXECUTABLE sdbus-c++-xml2cpp REQUIRED)
 
 # =========================
 # DBus XML generation
@@ -47,14 +31,13 @@ set(GENERATED_DIR
     ${CMAKE_BINARY_DIR}/generated
 )
 
-file(MAKE_DIRECTORY ${GENERATED_DIR})
-
 add_custom_command(
     OUTPUT
         ${GENERATED_DIR}/vehicle-server-glue.h
         ${GENERATED_DIR}/vehicle-client-glue.h
 
-    COMMAND sdbus-c++-xml2cpp
+    COMMAND ${CMAKE_COMMAND} -E make_directory ${GENERATED_DIR}
+    COMMAND ${SDBUS_XML2CPP_EXECUTABLE}
         ${DBUS_XML}
         --adaptor=${GENERATED_DIR}/vehicle-server-glue.h
         --proxy=${GENERATED_DIR}/vehicle-client-glue.h
@@ -69,7 +52,21 @@ add_custom_target(generate_dbus_bindings DEPENDS
     ${GENERATED_DIR}/vehicle-client-glue.h
 )
 
-include_directories(${GENERATED_DIR})
+function(configure_vehicle_target target)
+    target_compile_features(${target} PRIVATE cxx_std_20)
+    set_target_properties(${target} PROPERTIES CXX_EXTENSIONS OFF)
+    target_include_directories(${target} PRIVATE
+        ${CMAKE_SOURCE_DIR}/src
+        ${CMAKE_SOURCE_DIR}/src/services
+        ${GENERATED_DIR}
+    )
+    target_link_libraries(${target} PRIVATE PkgConfig::SDBUS)
+    add_dependencies(${target} generate_dbus_bindings)
+
+    if(CMAKE_CXX_COMPILER_ID MATCHES "GNU|Clang")
+        target_compile_options(${target} PRIVATE -Wall -Wextra -Wpedantic)
+    endif()
+endfunction()
 
 # =========================
 # Server
@@ -82,15 +79,7 @@ if(BUILD_SERVER)
         src/services/VehicleService.cpp
     )
 
-    target_include_directories(vehicle_server PRIVATE
-        ${CMAKE_SOURCE_DIR}/src/services
-    )
-
-    add_dependencies(vehicle_server generate_dbus_bindings)
-
-    target_link_libraries(vehicle_server
-        ${SDBUS_LIBRARIES}
-    )
+    configure_vehicle_target(vehicle_server)
 
 endif()
 
@@ -104,10 +93,6 @@ if(BUILD_CLIENT)
         src/client/main.cpp
     )
 
-    add_dependencies(vehicle_client generate_dbus_bindings)
-
-    target_link_libraries(vehicle_client
-        ${SDBUS_LIBRARIES}
-    )
+    configure_vehicle_target(vehicle_client)
 
 endif()

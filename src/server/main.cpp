@@ -1,25 +1,19 @@
 #include "VehicleService.hpp"
+#include "VehicleMonitorConstants.hpp"
 
 #include <sdbus-c++/sdbus-c++.h>
 
 #include <iostream>
 
-constexpr const char* SERVICE_NAME =
-    "com.labprob.VehicleMonitor";
-
-constexpr const char* OBJECT_PATH =
-    "/com/labprob/VehicleMonitor";
-
 int main()
 {
     try
     {
-        auto connection =
-            sdbus::createSessionBusConnection();
+        auto connection = sdbus::createSessionBusConnection();
 
-        connection->requestName(SERVICE_NAME);
+        connection->requestName(vehicle_monitor::service_name);
 
-        VehicleService service(*connection, OBJECT_PATH);
+        VehicleService service(*connection, vehicle_monitor::object_path);
 
         std::cout << "Vehicle DBus service started\n";
 
@@ -27,7 +21,8 @@ int main()
     }
     catch (const std::exception& e)
     {
-        std::cerr << e.what() << '\n';
+        std::cerr << "Vehicle D-Bus service failed: " << e.what() << '\n';
+        return 1;
     }
 
     return 0;

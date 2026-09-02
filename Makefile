@@ -5,8 +5,7 @@ BUILD_DIR=build
 all: configure build
 
 configure:
-	mkdir -p $(BUILD_DIR)
-	cd $(BUILD_DIR) && cmake ..
+	cmake -S . -B $(BUILD_DIR)
 
 build:
 	cmake --build $(BUILD_DIR)
